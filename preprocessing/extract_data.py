@@ -6,6 +6,7 @@ import numpy as np
 import csv
 import pickle
 from collections import defaultdict
+from tqdm import tqdm, trange
 
 
 class DataSet():
@@ -66,30 +67,35 @@ class YelpDataSet(DataSet):
                 node_attrs = ['attributes.GoodForKids', 'attributes.RestaurantsTakeOut', 'attributes.OutdoorSeating',
                               'attributes.RestaurantsGoodForGroups', 'attributes.RestaurantsDelivery',
                               'attributes.RestaurantsReservations']
-                self.node_attr_dict = {k: [[], []] for k in node_attrs}
-                businesses = set()
+
+                self.attr_business_dict = {k: [[], []] for k in node_attrs}
+                self.business_attr_dict = defaultdict(dict)
+                self.businesses = set()
                 with open(osp.join(self.data_dir, 'business.json')) as bs_json_file:
                     cities = set()
                     categories = set()
                     stars = set()
                     for line in bs_json_file:
                         line_contents = json.loads(line)
+                        line_contents['business_id'] = 'b' + line_contents['business_id']
                         taken = False
                         for node_attr in node_attrs:
                             val = self.get_nested_value(line_contents, node_attr)
                             if val is not None:
                                 taken = True
+                                self.business_attr_dict[line_contents['business_id']][node_attr] = val
                                 if val:
-                                    self.node_attr_dict[node_attr][0].append(line_contents['business_id'])
+                                    self.attr_business_dict[node_attr][0].append(line_contents['business_id'])
                                 else:
-                                    self.node_attr_dict[node_attr][1].append(line_contents['business_id'])
+                                    self.attr_business_dict[node_attr][1].append(line_contents['business_id'])
                         if not taken:
                             continue
 
                         line_contents['city'] = line_contents['city'].replace(' ', '_')
                         line_contents['categories'] = [category.replace(' ', '_') for category in
                                                        line_contents['categories']]
-                        businesses.add(line_contents['business_id'])
+
+                        self.businesses.add(line_contents['business_id'])
                         cities.add(line_contents['city'])
                         categories.update(line_contents['categories'])
                         stars.add(line_contents['stars'])
@@ -116,7 +122,9 @@ class YelpDataSet(DataSet):
                     bs_usr_pairs = set()
                     for line in rvw_json_file:
                         line_contents = json.loads(line)
-                        if line_contents['business_id'] in businesses:
+                        line_contents['business_id'] = 'b' + line_contents['business_id']
+                        line_contents['user_id'] = 'u' + line_contents['user_id']
+                        if line_contents['business_id'] in self.businesses:
                             users.add(line_contents['user_id'])
                             bs_usr_pairs.add((line_contents['business_id'], line_contents['user_id']))
                     for bs_usr_pair in bs_usr_pairs:
@@ -142,7 +150,7 @@ class YelpDataSet(DataSet):
                 for user in users:
                     node_file.write(user + '\tu\n')
 
-                for business in businesses:
+                for business in self.businesses:
                     node_file.write(business + '\tb\n')
 
 
@@ -153,31 +161,66 @@ class YelpDataSet(DataSet):
 
         for cls in self.node_attr_dict:
             with open(osp.join(node_classes_dir, cls + '.txt'), mode='w') as node_class_file:
-                for pos_node in self.node_attr_dict[cls][0]:
+                for pos_node in self.attr_business_dict[cls][0]:
     #                 print(node)
                     node_class_file.write(pos_node + '\t' + '1' + '\n')
-                for neg_node in self.node_attr_dict[cls][1]:
+                for neg_node in self.attr_business_dict[cls][1]:
     #                 print(node)
                     node_class_file.write(neg_node + '\t' + '0' + '\n')
 
 
-    def gen_train_test_pairs(self):
-        node_pairs_dir = osp.join(self.output_dir, 'node_pairs')
+    def gen_train_test_pairs(self, test_sampling_ratio):
+        node_pairs_dir = osp.join(self.output_dir, 'train_test_node_pairs')
         if not osp.exists(node_pairs_dir):
             os.makedirs(node_pairs_dir)
-        with open(osp.join(node_pairs_dir, 'pos_node_pairs.txt'), mode='w', newline='') as pnp_file:
-            with open(osp.join(node_pairs_dir, 'neg_node_pairs.txt'), mode='w', newline='') as nnp_file:
+        with open(osp.join(node_pairs_dir, 'train_pos_node_pairs.txt'), mode='w', newline='') as pnp_file:
+            with open(osp.join(node_pairs_dir, 'train_neg_node_pairs.txt'), mode='w', newline='') as nnp_file:
                 pos_csv_writer = csv.writer(pnp_file, delimiter='\t')
                 neg_csv_writer = csv.writer(nnp_file, delimiter='\t')
                 for i in range(self.pos_pair_num):
-                    attr = np.random.choice(list(self.node_attr_dict.keys()))
-                    business_pair = np.random.choice(self.node_attr_dict[attr][np.random.randint(2)], 2)
+                    attr = np.random.choice(list(self.attr_business_dict.keys()))
+                    business_pair = np.random.choice(self.attr_business_dict[attr][np.random.randint(2)], 2)
                     pos_csv_writer.writerow(business_pair)
                     for j in range(self.neg_sampling_ratio):
-                        attr = np.random.choice(list(self.node_attr_dict.keys()))
-                        business1 = np.random.choice(self.node_attr_dict[attr][0])
-                        business2 = np.random.choice(self.node_attr_dict[attr][1])
+                        attr = np.random.choice(list(self.attr_business_dict.keys()))
+                        business1 = np.random.choice(self.attr_business_dict[attr][0])
+                        business2 = np.random.choice(self.attr_business_dict[attr][1])
                         neg_csv_writer.writerow([business1, business2])
+
+        test_businesses = np.random.choice(list(self.businesses), size=int(len(self.businesses) * test_sampling_ratio),
+                                           replace=False)
+        test_pos_dict = defaultdict(set)
+        for business in test_businesses:
+            for node_attr in self.business_attr_dict[business]:
+                test_pos_dict[business].update(self.attr_business_dict[node_attr]\
+                    [0 if self.business_attr_dict[business][node_attr] else 1])
+
+        # with open(osp.join(self.node_pairs_dir, 'test_pos_dict.p'), mode='rb') as tpd_file:
+        #     test_pos_dict = pickle.load(tpd_file)
+        # with open(osp.join(self.node_pairs_dir, 'all_businesses.p'), mode='rb') as ab_file:
+        #     all_businesses = pickle.load(ab_file)
+        test_node_pairs_list = []
+        y_tests = []
+        for business1 in tqdm(test_pos_dict, desc='Generating test node pairs (1st loop)'):
+            node_pairs = []
+            y_test = np.empty(0)
+            for business2 in tqdm(self.businesses, desc='Generating test node pairs (2nd loop)'):
+                # feature_vec = self.get_feature_vec((business1, business2), vec_func)
+                node_pairs.append((business1, business2))
+                y_test = np.append(y_test, 1 if business2 in test_pos_dict[business1] else 0)
+            test_node_pairs_list.append(node_pairs)
+            y_tests.append(y_test)
+
+        with open(osp.join(node_pairs_dir, 'test_node_pairs.p'), mode='wb') as tnp_file:
+            pickle.dump([test_node_pairs_list, y_tests], tnp_file)
+        # with open(osp.join(node_pairs_dir, 'test_pos_dict.p'), mode='wb') as tpd_file:
+        #     pickle.dump(test_pos_dict, tpd_file)
+        # with open(osp.join(node_pairs_dir, 'all_businesses.p'), mode='wb') as ab_file:
+        #     pickle.dump(self.businesses, ab_file)
+
+
+
+
 
 
 class IMDbDataSet(DataSet):
@@ -227,39 +270,124 @@ class IMDbDataSet(DataSet):
         if not osp.exists(node_classes_dir):
             os.makedirs(node_classes_dir)
 
-        self.genre_dict = defaultdict(list)
+        self.genre_movie_dict = defaultdict(list)
+        self.movie_genre_dict = defaultdict(list)
         with open(osp.join(self.data_dir, 'movie_genre_rel.txt')) as mgr_file:
             for line in mgr_file:
                 movie_genre_pair = line.strip().split('\t')
-                self.genre_dict[int(movie_genre_pair[1])].append(int(movie_genre_pair[0]))
+                self.genre_movie_dict[int(movie_genre_pair[1])].append(int(movie_genre_pair[0]))
+                self.movie_genre_dict[int(movie_genre_pair[0])].append(int(movie_genre_pair[1]))
 
-        for cls in self.genre_dict:
+        for cls in self.genre_movie_dict:
             with open(osp.join(node_classes_dir, 'genre_' + str(cls) + '.txt'), mode='w') as node_class_file:
-                for node in self.genre_dict[cls]:
+                for node in self.genre_movie_dict[cls]:
     #                 print(node)
                     node_class_file.write('m' + str(node) + '\n')
-    #             for neg_node in self.node_attr_dict[cls][1]:
-    # #                 print(node)
-    #                 node_class_file.write(neg_node + '\t' + '0' + '\n')
 
-    def gen_train_test_pairs(self):
-        node_pairs_dir = osp.join(self.output_dir, 'node_pairs')
+    def gen_train_test_pairs(self, test_sampling_ratio):
+        node_pairs_dir = osp.join(self.output_dir, 'train_test_node_pairs')
         if not osp.exists(node_pairs_dir):
             os.makedirs(node_pairs_dir)
 
-        with open(osp.join(node_pairs_dir, 'pos_node_pairs.txt'), mode='w', newline='') as pnp_file:
-            with open(osp.join(node_pairs_dir, 'neg_node_pairs.txt'), mode='w', newline='') as nnp_file:
+        with open(osp.join(node_pairs_dir, 'train_pos_node_pairs.txt'), mode='w', newline='') as pnp_file:
+            with open(osp.join(node_pairs_dir, 'train_neg_node_pairs.txt'), mode='w', newline='') as nnp_file:
                 pos_csv_writer = csv.writer(pnp_file, delimiter='\t')
                 neg_csv_writer = csv.writer(nnp_file, delimiter='\t')
                 for i in range(self.pos_pair_num):
-                    genre = np.random.choice(list(self.genre_dict.keys()))
-                    movie_pair = np.random.choice(self.genre_dict[genre], 2)
+                    genre = np.random.choice(list(self.genre_movie_dict.keys()))
+                    movie_pair = np.random.choice(self.genre_movie_dict[genre], 2)
                     pos_csv_writer.writerow(['m' + str(movie) for movie in movie_pair])
                     for j in range(self.neg_sampling_ratio):
-                        genre = np.random.choice(list(self.genre_dict.keys()))
-                        movie1 = np.random.choice(self.genre_dict[genre])
-                        movie2 = np.random.choice(list(set(range(1, self.num_movies + 1)) - set(self.genre_dict[genre])))
+                        genre = np.random.choice(list(self.genre_movie_dict.keys()))
+                        movie1 = np.random.choice(self.genre_movie_dict[genre])
+                        movie2 = np.random.choice(list(set(range(1, self.num_movies + 1))
+                                                       - set(self.genre_movie_dict[genre])))
                         neg_csv_writer.writerow(['m' + str(movie1), 'm' + str(movie2)])
+
+        test_movies = np.random.randint(1, self.num_movies + 1, size=int(self.num_movies * test_sampling_ratio))
+        test_pos_dict = defaultdict(set)
+        for movie in test_movies:
+            for genre in self.movie_genre_dict[movie]:
+                test_pos_dict[movie].update(self.genre_movie_dict[genre])
+
+        test_node_pairs_list = []
+        y_tests = []
+        for movie1 in tqdm(test_pos_dict, desc='Generating test node pairs (1st loop)'):
+            node_pairs = []
+            y_test = np.empty(0)
+            for movie2 in trange(1, self.num_movies + 1, desc='Generating test node pairs (2nd loop)'):
+                # feature_vec = self.get_feature_vec((business1, business2), vec_func)
+                node_pairs.append(('m' + str(movie1), 'm' + str(movie2)))
+                y_test = np.append(y_test, 1 if movie2 in test_pos_dict[movie1] else 0)
+            test_node_pairs_list.append(node_pairs)
+            y_tests.append(y_test)
+
+        with open(osp.join(node_pairs_dir, 'test_node_pairs.p'), mode='wb') as tnp_file:
+            pickle.dump([test_node_pairs_list, y_tests], tnp_file)
+
+
+class DBLPDataSet(DataSet):
+
+    def preprocess(self):
+        with open(osp.join(self.output_dir, 'node.dat'), mode='w') as node_file:
+            with open(osp.join(self.output_dir, 'link.dat'), mode='w') as link_file:
+                papers = set()
+                venues = set()
+                authors = set()
+                years = set()
+                citation_pairs = set()
+                with open(osp.join(self.data_dir, 'dblp.txt')) as fo:
+                    paper = dict()
+                    for line in fo:
+                        if line == '\n':
+                            papers.add(paper['#index'])
+                            papers.update(paper.get('#%', []))
+                            try:
+                                venues.add(paper['#c'])
+                            except KeyError:
+                                print(paper)
+                                return
+                            authors.update(paper.get('#@', []))
+                            years.add(paper['#t'])
+                            for citation in paper.get('#%', []):
+                                citation_pairs.update([(paper['#index'], citation), (citation, paper['#index'])])
+                            for author in paper.get('#@', []):
+                                link_file.write(paper['#index'] + '\t' + author + '\n')
+                                link_file.write(author + '\t' + paper['#index'] + '\n')
+                            link_file.write(paper['#index'] + '\t' + paper['#c'] + '\n')
+                            link_file.write(paper['#c'] + '\t' + paper['#index'] + '\n')
+                            link_file.write(paper['#index'] + '\t' + paper['#t'] + '\n')
+                            link_file.write(paper['#t'] + '\t' + paper['#index'] + '\n')
+                            paper.clear()
+                        else:
+                            line = line.strip().replace(' ', '_')
+
+                            if line[1] == 'i':
+                                paper[line[:6]] = line[6:]
+                            elif line[1] == '%':
+                                if line[:2] not in paper:
+                                    paper[line[:2]] = []
+                                paper[line[:2]].append(line[2:])
+                            elif line[1] == '@':
+                                paper[line[:2]] = line[2:].split(',_')
+                            else:
+                                paper[line[:2]] = line[2:]
+
+                for paper in papers:
+                    node_file.write(paper + '\tp\n')
+
+                for venue in venues:
+                    node_file.write(venue + '\tv\n')
+
+                for author in authors:
+                    node_file.write(author + '\ta\n')
+
+                for year in years:
+                    node_file.write(year + '\ty\n')
+
+                for citation_pair in citation_pairs:
+                    link_file.write(citation_pair[0] + '\t' + citation_pair[1] + '\n')
+
 
 
 if __name__ == '__main__':
@@ -293,6 +421,13 @@ if __name__ == '__main__':
     parser.add_argument(
         '--neg_sampling_ratio',
         type=int,
+        default=1,
+        help='sampling ratio of negative pairs compared to positive pairs'
+    )
+    parser.add_argument(
+        '--test_sampling_ratio',
+        type=float,
+        default=0.001,
         help='sampling ratio of negative pairs compared to positive pairs'
     )
     args = parser.parse_args()
@@ -302,13 +437,14 @@ if __name__ == '__main__':
     if not osp.exists(args.output_dir):
         os.makedirs(args.output_dir)
 
+    ds = None
     if args.dataset == 'yelp':
         ds = YelpDataSet(args.data_dir, args.output_dir, args.pos_pair_num, args.neg_sampling_ratio)
     elif args.dataset == 'imdb':
         ds = IMDbDataSet(args.data_dir, args.output_dir, args.pos_pair_num, args.neg_sampling_ratio)
-    else:
-        ds = None
+    elif args.dataset == 'dblp':
+        ds = DBLPDataSet(args.data_dir, args.output_dir, args.pos_pair_num, args.neg_sampling_ratio)
     # ds.print_node_attr_distr()
     ds.preprocess()
     ds.write_node_classes()
-    ds.gen_train_test_pairs()
+    ds.gen_train_test_pairs(args.test_sampling_ratio)
