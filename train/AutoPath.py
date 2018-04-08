@@ -1,6 +1,7 @@
 import gc
 from copy import deepcopy
 from random import shuffle
+from multiprocessing import *
 
 import numpy as np
 from tqdm import tqdm
@@ -194,10 +195,25 @@ class AutoPath(object):
 		start_state = start_state[:, 0]
 		assert len(start_state) == len(trials)
 
-		rank_lists = {}
-		for state, action in zip(start_state, trials):
-			frequency = np.zeros(self.params.num_node, dtype=np.int32)
-			for a in action:
-				frequency[a] -= 1
-			rank_lists[state] = np.argsort(frequency)
-		return rank_lists
+		manager = Manager()
+		rank_lists = manager.dict()
+
+		processes = []
+		for i in range(self.params.num_process):
+			process = Process(target=self.worker, args=(i, self.params.num_process, len(start_state), start_state, trials, rank_lists,))
+			process.start()
+			processes.append(process)
+		for process in processes:
+			process.join()
+
+		result_rank_lists = {key: value for key, value in rank_lists.items()}
+		return result_rank_lists
+
+	def worker(self, process_id, num_process, num_data, start_state, trials, rank_lists):
+		for data_id, state, action in zip(range(num_data), start_state, trials):
+			if data_id % num_process == process_id:
+				state_type = self.environment.node_to_type[state]
+				frequency = np.zeros(self.params.num_node, dtype=np.int32)
+				for a in action:
+					frequency[a] -= 1
+				rank_lists[state] = np.array([id for id in np.argsort(frequency) if self.environment.node_to_type[id] == state_type])
