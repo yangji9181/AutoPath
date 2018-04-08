@@ -23,6 +23,7 @@ def parse_args():
 	parser.add_argument('--step', type=int, default=2, help=None)
 	parser.add_argument('--num_trial', type=int, default=1, help='Number of random walks during planning')
 	parser.add_argument('--top_k', type=int, default=10, help='Top k for precision and recall')
+	parser.add_argument('--num_process', type=int, default=4, help='Number of processes for ranking')
 	return parser.parse_args()
 
 
