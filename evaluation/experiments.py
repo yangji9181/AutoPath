@@ -41,7 +41,7 @@ class Model():
     def __init__(self, data_dir):
         self.data_dir = data_dir
         # self.node_pairs_dir = osp.join(self.data_dir, 'train_test_node_pairs')
-        self.node_pairs_dir = '.'
+        self.node_pairs_dir = data_dir
 
     def get_test_node_pairs(self):
         with open(osp.join(self.node_pairs_dir, 'test_node_pairs.p'), mode='rb') as tnp_file:
@@ -73,11 +73,12 @@ class EmbeddingModel(Model):
         self.embedding_size = embedding_size
         self.baseline = baseline
         self.dataset = dataset
+        self.data_dir = data_dir
     
     def construct_embd_dict(self):
         self.embedding_dict = defaultdict(list)
         if self.baseline == 'esim':
-            with open('/shared/data/xikunz2/autopath/ESim/results/' + self.dataset + '_embedding.txt') as embedding_file:
+            with open(self.data_dir + 'esim_embedding.txt') as embedding_file:
                 csv_reader = csv.reader(embedding_file, delimiter=',')
                 for row in csv_reader:
                     if len(row) != self.embedding_size + 1:
@@ -280,12 +281,14 @@ if __name__ == '__main__':
         description='Evaluation. '
     )
 
-    parser.add_argument('--dataset',
-                        type=str,
-                        required=True,
-                        help='dataset to run pathsim on',
-                        choices=['yelp', 'imdb', 'dblp']
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        required=True,
+        help='dataset to run pathsim on',
+        choices=['yelp', 'imdb', 'dblp']
                         )
+
     parser.add_argument(
         '--data_dir',
         type=str,
@@ -309,7 +312,9 @@ if __name__ == '__main__':
     # In[4]:
 
     # train_size = 0.7
-    baselines = ['esim', 'metapath2vec', 'pathsim']
+    #baselines = ['esim', 'metapath2vec', 'pathsim']
+    baselines = ['esim']
+    dataset = 'imdb'
     baseline_performance = dict()
     for bsl in tqdm(baselines, desc='Running a specific baseline'):
         # tuple of length 3
@@ -318,7 +323,7 @@ if __name__ == '__main__':
    
 
 
-# In[ ]:
+    # In[ ]:
 
 
     # Plot all precision curves
@@ -327,7 +332,7 @@ if __name__ == '__main__':
         plt.plot(range(5, 35, 5), baseline_performance[baseline][0], label=baseline)
     plt.xlabel('k')
     plt.ylabel('Precision @ k')
-    plt.title(dataset + ' - Precision @ k')
+    #plt.title(dataset + ' - Precision @ k')
     # plt.legend(loc="lower right")
     plt.legend()
 
@@ -343,7 +348,7 @@ if __name__ == '__main__':
         plt.plot(range(5, 35, 5), baseline_performance[baseline][1], label=baseline)
     plt.xlabel('k')
     plt.ylabel('Recall @ k')
-    plt.title(dataset + ' - Recall @ k')
+    #plt.title(dataset + ' - Recall @ k')
     # plt.legend(loc="lower right")
     plt.legend()
 
@@ -371,5 +376,5 @@ if __name__ == '__main__':
 
 
     # plt.show()
-    fig1.savefig(dataset + '_precision_plot.png')
-    fig2.savefig(dataset + '_recall_plot.png')
+    fig1.savefig(dataset + '_pre.png')
+    fig2.savefig(dataset + '_rec.png')

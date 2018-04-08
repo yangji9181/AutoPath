@@ -6,12 +6,12 @@ do
 		yelp)
 		;;
 		imdb)
-			DATA_DIR=/shared/data/xikunz2/autopath/AutoPath/data/imdb
+			DATA_DIR=imdb/
 		;;
 		dblp)
 		;;
 	esac
 
-	python experiments.py --dataset $DATASET --data_dir $DATA_DIR
+	python3 experiments.py --dataset $DATASET --data_dir $DATA_DIR
 
 done
