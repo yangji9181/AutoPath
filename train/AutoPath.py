@@ -1,4 +1,5 @@
 import gc
+import operator
 from copy import deepcopy
 from random import shuffle
 
@@ -196,8 +197,10 @@ class AutoPath(object):
 
 		rank_lists = {}
 		for state, action in zip(start_state, trials):
-			frequency = np.zeros(self.params.num_node, dtype=np.int32)
+			start_type = self.environment.node_to_type[state]
+			frequency = {key: 0 for key in range(self.params.num_node) if self.environment.node_to_type[key] == start_type}
 			for a in action:
-				frequency[a] -= 1
-			rank_lists[state] = np.argsort(frequency)
+				if a in frequency:
+					frequency[a] += 1
+			rank_lists[state] = [pair[0] for pair in sorted(frequency.items(), key=operator.itemgetter(1), reverse=True)]
 		return rank_lists
