@@ -33,13 +33,15 @@ from sklearn.metrics import roc_auc_score, roc_curve
 import heapq
 from scipy.sparse import load_npz
 import pickle
+import argparse
 
 
 class Model():
 
     def __init__(self, data_dir):
         self.data_dir = data_dir
-        self.node_pairs_dir = osp.join(self.data_dir, 'train_test_node_pairs')
+        # self.node_pairs_dir = osp.join(self.data_dir, 'train_test_node_pairs')
+        self.node_pairs_dir = '.'
 
     def get_test_node_pairs(self):
         with open(osp.join(self.node_pairs_dir, 'test_node_pairs.p'), mode='rb') as tnp_file:
@@ -175,7 +177,7 @@ def precision_recall_list(y_true, y_score):
     recalls = [recall_at_k(y_true, y_score, k) for k in range(5, 35, 5)]
     return precisions, recalls
 
-def calculate_results(baseline, train_size, dataset, data_dir):
+def calculate_results(baseline, dataset, data_dir):
     if baseline == 'pathsim':
         metapaths = []
         metapath_weights = []
@@ -269,21 +271,49 @@ def calculate_results(baseline, train_size, dataset, data_dir):
 
 
 if __name__ == '__main__':
-    dataset = 'yelp'
-    data_dir = '/shared/data/xikunz2/autopath/yelp_data'
-    num_pos_node_pairs = 40000
-    neg_sampling_ratio = 1
+    # dataset = 'yelp'
+    # data_dir = '/shared/data/xikunz2/autopath/yelp_data'
+    # num_pos_node_pairs = 40000
+    # neg_sampling_ratio = 1
     # generate_node_pairs(num_pos_node_pairs, neg_sampling_ratio)
+    parser = argparse.ArgumentParser(
+        description='Evaluation. '
+    )
 
+    parser.add_argument('--dataset',
+                        type=str,
+                        required=True,
+                        help='dataset to run pathsim on',
+                        choices=['yelp', 'imdb', 'dblp']
+                        )
+    parser.add_argument(
+        '--data_dir',
+        type=str,
+        required=True,
+        help='directory of the dataset'
+    )
+    # parser.add_argument(
+    #     '--num_pos_node_pairs',
+    #     type=int,
+    #     required=True,
+    #     help='number of positive node pairs'
+    # )
+    # parser.add_argument(
+    #     '--neg_sampling_ratio',
+    #     type=int,
+    #     default=1,
+    #     help='sampling ratio of negative node pairs'
+    # )
+    args = parser.parse_args()
 
     # In[4]:
 
-    train_size = 0.7
+    # train_size = 0.7
     baselines = ['esim', 'metapath2vec', 'pathsim']
     baseline_performance = dict()
     for bsl in tqdm(baselines, desc='Running a specific baseline'):
         # tuple of length 3
-        baseline_performance[bsl] = calculate_results(bsl, train_size, dataset, data_dir)
+        baseline_performance[bsl] = calculate_results(bsl, args.dataset, args.data_dir)
 
    
 
