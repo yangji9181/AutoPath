@@ -444,7 +444,7 @@ if __name__ == '__main__':
         ds = IMDbDataSet(args.data_dir, args.output_dir, args.pos_pair_num, args.neg_sampling_ratio)
     elif args.dataset == 'dblp':
         ds = DBLPDataSet(args.data_dir, args.output_dir, args.pos_pair_num, args.neg_sampling_ratio)
-    # ds.print_node_attr_distr()
-    ds.preprocess()
-    ds.write_node_classes()
-    ds.gen_train_test_pairs(args.test_sampling_ratio)
+    ds.print_node_attr_distr()
+    # ds.preprocess()
+    # ds.write_node_classes()
+    # ds.gen_train_test_pairs(args.test_sampling_ratio)
