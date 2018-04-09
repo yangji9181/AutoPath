@@ -220,6 +220,23 @@ def calculate_results(baseline, dataset, data_dir):
         y_scores = np.average(pathsim_list, axis=0, weights=metapath_weights)
         y_tests = pathsim_model.y_tests
 
+    elif baseline == 'autopath':
+        all_node_name_file = '../data/'+data_dir+'/node.dat'
+        test_node_name_file = '../data/'+data_dir+'/test_nodes.txt'
+        score_file = data_dir+'/rank_list.pkl'
+        node_names = []
+        test_node_names = []
+        with open(all_node_name_file, 'r') as f:
+            for line in f:
+                tokens = line.strip().split('\t')
+                if tokens[1] == 'm':
+                    node_names.append(tokens[0])
+        with open(test_node_name_file, 'r') as f:
+            for line in f:
+                test_node_names.append(line.strip())
+
+
+
     else:
         embedding_size = 50
 
