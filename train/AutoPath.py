@@ -1,4 +1,5 @@
 import gc
+import pickle
 from copy import deepcopy
 from random import shuffle
 from multiprocessing import *
@@ -205,8 +206,8 @@ class AutoPath(object):
 			processes.append(process)
 		for process in processes:
 			process.join()
-
 		result_rank_lists = {key: value for key, value in rank_lists.items()}
+		pickle.dump(result_rank_lists, open(self.params.rank_list_file, 'wb'))
 		return result_rank_lists
 
 	def worker(self, process_id, num_process, num_data, start_state, trials, rank_lists):
@@ -216,4 +217,7 @@ class AutoPath(object):
 				frequency = np.zeros(self.params.num_node, dtype=np.int32)
 				for a in action:
 					frequency[a] -= 1
-				rank_lists[state] = np.array([id for id in np.argsort(frequency) if self.environment.node_to_type[id] == state_type])
+				rank_lists[self.environment.id_to_name[state]] = {self.environment.id_to_name[node_id]: count for node_id, count in enumerate(frequency) if self.environment.node_to_type[node_id] == state_type}
+
+
+
