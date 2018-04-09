@@ -114,7 +114,7 @@ class EmbeddingModel(Model):
 
     def get_train_feature_vecs(self, vec_func='hadamard'):
         train_feature_vecs_list = []
-        for filename in tqdm(['train_pos_node_pairs.txt', 'train_pos_node_pairs.txt'],
+        for filename in tqdm(['train_pos_node_pairs.txt', 'train_neg_node_pairs.txt'],
                              desc='Getting training feature vectors (1st loop)'):
             train_feature_vecs = np.empty((0, self.embedding_size))
             with open(osp.join(self.node_pairs_dir, filename), newline='') as np_file:
@@ -182,13 +182,13 @@ def calculate_results(baseline, dataset, data_dir):
     if baseline == 'pathsim':
         metapaths = []
         metapath_weights = []
-        with open(osp.join('/shared/data/xikunz2/autopath/yelp_data', 'path.dat')) as path_file:
+        with open('../data/'+dataset+'/path.dat') as path_file:
             for line in path_file:
                 toks = line.strip().split(" ")
                 metapaths.append(toks[0])
                 metapath_weights.append(float(toks[1]))
 
-        with open(osp.join('pathsim/results', dataset + '_node_hash.p'), mode='rb') as node_hash_file:
+        with open(data_dir + '/' + dataset + '_node_hash.p', mode='rb') as node_hash_file:
             node_hash = pickle.load(node_hash_file)
         # pos_node_pair_list = sample_node_pairs('pos', train_size)
         # neg_node_pair_list = sample_node_pairs('neg', train_size)
@@ -202,15 +202,17 @@ def calculate_results(baseline, dataset, data_dir):
             node_type = metapath[0]
             # pathsim list for a specific metapath (2-D)
             single_pathsim_list = []
-            cmt_mtx = load_npz(osp.join('/shared/data/xikunz2/autopath/pathsim/results',
-                                        dataset + '_cmt_mtx_' + metapath + '.npz'))
+            cmt_mtx = load_npz(data_dir + '/' + dataset + '_cmt_mtx_' + metapath + '.npz')
             for node_pairs in tqdm(pathsim_model.test_node_pairs_list, desc='Processing a node pair list'):
                 single_pathsim_list.append([])
                 for node_pair in tqdm(node_pairs, desc='Processing a node pair'):
                     i1 = node_hash[node_type][node_pair[0]]
                     i2 = node_hash[node_type][node_pair[1]]
                     single_pathsim = 2 * cmt_mtx[i1, i2]
-                    single_pathsim /= cmt_mtx[i1, i1] + cmt_mtx[i2, i2]
+                    if cmt_mtx[i1, i1] + cmt_mtx[i2, i2] == 0:
+                        single_pathsim = 0
+                    else:
+                        single_pathsim /= cmt_mtx[i1, i1] + cmt_mtx[i2, i2]
                     single_pathsim_list[-1].append(single_pathsim)
             pathsim_list.append(single_pathsim_list)
 
@@ -313,7 +315,7 @@ if __name__ == '__main__':
 
     # train_size = 0.7
     #baselines = ['esim', 'metapath2vec', 'pathsim']
-    baselines = ['esim']
+    baselines = ['pathsim', 'esim']
     dataset = 'imdb'
     baseline_performance = dict()
     for bsl in tqdm(baselines, desc='Running a specific baseline'):
