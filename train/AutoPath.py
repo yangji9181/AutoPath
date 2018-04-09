@@ -191,8 +191,8 @@ class AutoPath(object):
 		trials = []
 		for _ in tqdm(range(self.params.num_trial), ncols=100):
 			_, actions, _ = self.collect_trajectory(sess, start_state)
-			trials.append(actions)
-		trials = np.concatenate(trials, axis=0)
+			trials.append(np.array(actions))
+		trials = np.concatenate(trials, axis=1)
 		start_state = start_state[:, 0]
 		assert len(start_state) == len(trials)
 
