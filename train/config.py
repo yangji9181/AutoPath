@@ -28,14 +28,14 @@ def parse_args():
 
 
 def init_dir(args):
-	args.data_dir = os.getcwd() + '/data/'
+	args.data_dir = os.getcwd() + '../data/imdb/'
 	args.model_dir = os.getcwd() + '/model/'
 	args.log_dir = os.getcwd() + '/log/'
-	args.node_file = args.data_dir + 'node.txt'
-	args.link_file = args.data_dir + 'link.txt'
-	args.train_files = [args.data_dir + 'train_' + str(i) + '.txt' for i in range(6)]
-	args.test_file = args.data_dir + 'test.txt'
-	args.plot_file = args.data_dir + 'reward.png'
+	args.node_file = args.data_dir + 'node.dat'
+	args.link_file = args.data_dir + 'link.dat'
+	args.train_files = [args.data_dir + 'node_classes' + 'genre_' + str(i) + '.txt' for i in range(1, 24)]
+	args.test_file = args.data_dir + 'test_nodes.txt'
+	args.plot_file = args.model_dir + 'reward.png'
 	args.model_file = args.model_dir + 'model.ckpt'
 	args.rank_list_file = args.data_dir + 'rank_list.pkl'
 
