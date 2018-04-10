@@ -30,6 +30,18 @@ def load_node(path):
 	return id_to_name, name_to_id, node_to_type, type_to_node_copy, id_to_type, type_to_id
 
 
+def load_feature(path):
+	feature = {}
+	dim = -1
+	with open(path) as f:
+		for line in f:
+			line = line.rstrip().split(',', 1)
+			vector = list(map(float, line[1].split(',')))
+			dim = len(vector)
+			feature[line[0]] = np.array(vector)
+	return feature, dim
+
+
 def load_groups(paths):
 	groups = []
 	for path in paths:
