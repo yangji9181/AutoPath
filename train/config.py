@@ -37,7 +37,7 @@ def init_dir(args):
 	args.test_file = args.data_dir + 'test_nodes.txt'
 	args.plot_file = args.model_dir + 'reward.png'
 	args.model_file = args.model_dir + 'model.ckpt'
-	args.rank_list_file = '../evaluation/imdb' + 'rank_list.pkl'
+	args.rank_list_file = '../evaluation/imdb/' + 'rank_list.pkl'
 
 args = parse_args()
 init_dir(args)

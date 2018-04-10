@@ -194,8 +194,6 @@ class AutoPath(object):
 			trials.append(np.array(actions))
 		trials = np.concatenate(trials, axis=1)
 		start_state = start_state[:, 0]
-		print(len(start_state))
-		print(len(trials))
 		assert len(start_state) == len(trials)
 
 		manager = Manager()

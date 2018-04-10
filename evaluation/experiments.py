@@ -36,7 +36,7 @@ import pickle
 import argparse
 
 
-class Model():
+class Model(object):
 
     def __init__(self, data_dir):
         self.data_dir = data_dir
@@ -90,8 +90,8 @@ class EmbeddingModel(Model):
                 for row in csv_reader:
                     self.embedding_dict[row[0]] = [float(e) for e in row[1].split(' ')[:-1]]
         elif self.baseline == 'metapath2vec':
-            with open('/shared/data/xikunz2/autopath/metapath2vec/results/' + self.dataset +
-                      '_embedding_w100_l10.txt') as embedding_file:
+            with open(self.data_dir + self.dataset +
+                      '_embedding_w10_l10.txt') as embedding_file:
                 csv_reader = csv.reader(embedding_file, delimiter=' ')
                 for i, row in enumerate(csv_reader):
                     if i > 0:
@@ -117,7 +117,7 @@ class EmbeddingModel(Model):
         for filename in tqdm(['train_pos_node_pairs.txt', 'train_neg_node_pairs.txt'],
                              desc='Getting training feature vectors (1st loop)'):
             train_feature_vecs = np.empty((0, self.embedding_size))
-            with open(osp.join(self.node_pairs_dir, filename), newline='') as np_file:
+            with open(osp.join(self.node_pairs_dir, filename)) as np_file:
                 csv_reader = csv.reader(np_file, delimiter='\t')
                 for business_pair in tqdm(csv_reader, desc='Getting training feature vectors (2nd loop)'):
                     feature_vec = self.get_feature_vec(business_pair, vec_func)
@@ -223,7 +223,7 @@ def calculate_results(baseline, dataset, data_dir):
     elif baseline == 'autopath':
         all_node_name_file = '../data/'+data_dir+'/node.dat'
         test_node_name_file = '../data/'+data_dir+'/test_nodes.txt'
-        score_file = data_dir+'/rank_list.pkl'
+        score_file = data_dir+'rank_list.pkl'
         node_names = []
         test_node_names = []
         with open(all_node_name_file, 'r') as f:
@@ -231,11 +231,24 @@ def calculate_results(baseline, dataset, data_dir):
                 tokens = line.strip().split('\t')
                 if tokens[1] == 'm':
                     node_names.append(tokens[0])
+        num_nodes = len(node_names)
         with open(test_node_name_file, 'r') as f:
             for line in f:
                 test_node_names.append(line.strip())
+        num_test = len(test_node_names)
+        with open(score_file, 'r') as f:
+            scores = pickle.load(f)
 
+        y_scores = np.zeros((num_test, num_nodes))
+        for k in scores.keys():
+            test_idx = test_node_names.index(k)
+            for kk in scores[k].keys():
+                node_idx = node_names.index(kk)
+                y_scores[test_idx, node_idx] = -scores[k][kk]
 
+        model = Model(data_dir)
+        model.get_test_node_pairs()
+        y_tests = model.y_tests
 
     else:
         embedding_size = 50
@@ -331,8 +344,8 @@ if __name__ == '__main__':
     # In[4]:
 
     # train_size = 0.7
-    #baselines = ['esim', 'metapath2vec', 'pathsim']
-    baselines = ['pathsim', 'esim']
+    baselines = ['metapath2vec']
+    #baselines = ['pathsim', 'esim', 'autopath']
     dataset = 'imdb'
     baseline_performance = dict()
     for bsl in tqdm(baselines, desc='Running a specific baseline'):

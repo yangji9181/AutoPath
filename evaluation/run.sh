@@ -12,6 +12,6 @@ do
 		;;
 	esac
 
-	python3 experiments.py --dataset $DATASET --data_dir $DATA_DIR
+	python experiments.py --dataset $DATASET --data_dir $DATA_DIR
 
 done
