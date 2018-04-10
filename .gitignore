@@ -4,3 +4,4 @@ preprocessing/
 *config.py
 !/train/config.py
 /data/imdb/pretrained_emb.txt
+!/data/imdb/pretrained_emb.txt
