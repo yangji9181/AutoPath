@@ -41,7 +41,7 @@ class Model():
     def __init__(self, data_dir):
         self.data_dir = data_dir
         # self.node_pairs_dir = osp.join(self.data_dir, 'train_test_node_pairs')
-        self.node_pairs_dir = '.'
+        self.node_pairs_dir = data_dir
 
     def get_test_node_pairs(self):
         with open(osp.join(self.node_pairs_dir, 'test_node_pairs.p'), mode='rb') as tnp_file:
@@ -73,11 +73,12 @@ class EmbeddingModel(Model):
         self.embedding_size = embedding_size
         self.baseline = baseline
         self.dataset = dataset
+        self.data_dir = data_dir
     
     def construct_embd_dict(self):
         self.embedding_dict = defaultdict(list)
         if self.baseline == 'esim':
-            with open('/shared/data/xikunz2/autopath/ESim/results/' + self.dataset + '_embedding.txt') as embedding_file:
+            with open(self.data_dir + 'esim_embedding.txt') as embedding_file:
                 csv_reader = csv.reader(embedding_file, delimiter=',')
                 for row in csv_reader:
                     if len(row) != self.embedding_size + 1:
@@ -181,13 +182,13 @@ def calculate_results(baseline, dataset, data_dir):
     if baseline == 'pathsim':
         metapaths = []
         metapath_weights = []
-        with open(osp.join('/shared/data/xikunz2/autopath/yelp_data', 'path.dat')) as path_file:
+        with open('../data/'+dataset+'/path.dat') as path_file:
             for line in path_file:
                 toks = line.strip().split(" ")
                 metapaths.append(toks[0])
                 metapath_weights.append(float(toks[1]))
 
-        with open(osp.join('pathsim/results', dataset + '_node_hash.p'), mode='rb') as node_hash_file:
+        with open(data_dir + '/' + dataset + '_node_hash.p', mode='rb') as node_hash_file:
             node_hash = pickle.load(node_hash_file)
         # pos_node_pair_list = sample_node_pairs('pos', train_size)
         # neg_node_pair_list = sample_node_pairs('neg', train_size)
@@ -201,21 +202,40 @@ def calculate_results(baseline, dataset, data_dir):
             node_type = metapath[0]
             # pathsim list for a specific metapath (2-D)
             single_pathsim_list = []
-            cmt_mtx = load_npz(osp.join('/shared/data/xikunz2/autopath/pathsim/results',
-                                        dataset + '_cmt_mtx_' + metapath + '.npz'))
+            cmt_mtx = load_npz(data_dir + '/' + dataset + '_cmt_mtx_' + metapath + '.npz')
             for node_pairs in tqdm(pathsim_model.test_node_pairs_list, desc='Processing a node pair list'):
                 single_pathsim_list.append([])
                 for node_pair in tqdm(node_pairs, desc='Processing a node pair'):
                     i1 = node_hash[node_type][node_pair[0]]
                     i2 = node_hash[node_type][node_pair[1]]
                     single_pathsim = 2 * cmt_mtx[i1, i2]
-                    single_pathsim /= cmt_mtx[i1, i1] + cmt_mtx[i2, i2]
+                    if cmt_mtx[i1, i1] + cmt_mtx[i2, i2] == 0:
+                        single_pathsim = 0
+                    else:
+                        single_pathsim /= cmt_mtx[i1, i1] + cmt_mtx[i2, i2]
                     single_pathsim_list[-1].append(single_pathsim)
             pathsim_list.append(single_pathsim_list)
 
         #2-D numpy array
         y_scores = np.average(pathsim_list, axis=0, weights=metapath_weights)
         y_tests = pathsim_model.y_tests
+
+    elif baseline == 'autopath':
+        all_node_name_file = '../data/'+data_dir+'/node.dat'
+        test_node_name_file = '../data/'+data_dir+'/test_nodes.txt'
+        score_file = data_dir+'/rank_list.pkl'
+        node_names = []
+        test_node_names = []
+        with open(all_node_name_file, 'r') as f:
+            for line in f:
+                tokens = line.strip().split('\t')
+                if tokens[1] == 'm':
+                    node_names.append(tokens[0])
+        with open(test_node_name_file, 'r') as f:
+            for line in f:
+                test_node_names.append(line.strip())
+
+
 
     else:
         embedding_size = 50
@@ -280,12 +300,14 @@ if __name__ == '__main__':
         description='Evaluation. '
     )
 
-    parser.add_argument('--dataset',
-                        type=str,
-                        required=True,
-                        help='dataset to run pathsim on',
-                        choices=['yelp', 'imdb', 'dblp']
+    parser.add_argument(
+        '--dataset',
+        type=str,
+        required=True,
+        help='dataset to run pathsim on',
+        choices=['yelp', 'imdb', 'dblp']
                         )
+
     parser.add_argument(
         '--data_dir',
         type=str,
@@ -309,7 +331,9 @@ if __name__ == '__main__':
     # In[4]:
 
     # train_size = 0.7
-    baselines = ['esim', 'metapath2vec', 'pathsim']
+    #baselines = ['esim', 'metapath2vec', 'pathsim']
+    baselines = ['pathsim', 'esim']
+    dataset = 'imdb'
     baseline_performance = dict()
     for bsl in tqdm(baselines, desc='Running a specific baseline'):
         # tuple of length 3
@@ -318,7 +342,7 @@ if __name__ == '__main__':
    
 
 
-# In[ ]:
+    # In[ ]:
 
 
     # Plot all precision curves
@@ -327,7 +351,7 @@ if __name__ == '__main__':
         plt.plot(range(5, 35, 5), baseline_performance[baseline][0], label=baseline)
     plt.xlabel('k')
     plt.ylabel('Precision @ k')
-    plt.title(dataset + ' - Precision @ k')
+    #plt.title(dataset + ' - Precision @ k')
     # plt.legend(loc="lower right")
     plt.legend()
 
@@ -343,7 +367,7 @@ if __name__ == '__main__':
         plt.plot(range(5, 35, 5), baseline_performance[baseline][1], label=baseline)
     plt.xlabel('k')
     plt.ylabel('Recall @ k')
-    plt.title(dataset + ' - Recall @ k')
+    #plt.title(dataset + ' - Recall @ k')
     # plt.legend(loc="lower right")
     plt.legend()
 
@@ -371,5 +395,5 @@ if __name__ == '__main__':
 
 
     # plt.show()
-    fig1.savefig(dataset + '_precision_plot.png')
-    fig2.savefig(dataset + '_recall_plot.png')
+    fig1.savefig(dataset + '_pre.png')
+    fig2.savefig(dataset + '_rec.png')

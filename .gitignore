@@ -1,3 +1,4 @@
 baselines/
 preprocessing/
 *.DS_Store
+*config.py
