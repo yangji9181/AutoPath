@@ -1,2 +1,2 @@
-model_checkpoint_path: "/Users/carlyang/Documents/AutoPath/train/model/model.ckpt"
-all_model_checkpoint_paths: "/Users/carlyang/Documents/AutoPath/train/model/model.ckpt"
+model_checkpoint_path: "/Users/mengxiongliu/Desktop/AutoPath/train/model/model.ckpt"
+all_model_checkpoint_paths: "/Users/mengxiongliu/Desktop/AutoPath/train/model/model.ckpt"

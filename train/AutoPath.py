@@ -21,6 +21,7 @@ class AutoPath(object):
 		self.training = tf.placeholder(tf.bool)
 		# last index is None embedding
 		self.embedding = embedding('Embedding', [self.params.num_node, self.params.embed_dim])
+		self.feature = tf.Variable(self.environment.feature, dtype=tf.float32, trainable=False)
 		self.indices = tf.placeholder(tf.int32, [None])
 		self.labels = tf.placeholder(tf.int32, [None])
 		self.neighbors = tf.placeholder(tf.int32, [None, None])
@@ -30,7 +31,7 @@ class AutoPath(object):
 		self.reward = tf.placeholder(tf.float32, [None])
 		self.future_reward = tf.placeholder(tf.float32, [None])
 
-		self.build_classification()
+		self.build_classification_reconstruction()
 		self.build_PPO()
 
 		for variable in tf.trainable_variables():
@@ -38,17 +39,29 @@ class AutoPath(object):
 			# tf.summary.histogram(variable.name, variable)
 		self.merged_summary_op = tf.summary.merge_all()
 
-	def build_classification(self):
-		embedding = dropout(tf.nn.embedding_lookup(self.embedding, self.indices), self.params.keep_prob, self.training)
-		logits = fully_connected(embedding, self.params.num_type, 'Classification', activation='linear')
+
+	def build_classification_reconstruction(self):
+		embedding = tf.nn.embedding_lookup(self.embedding, self.indices)
+
+		hidden = embedding
+		for i, dim in enumerate(self.params.reconstruct_hidden_dim):
+			hidden = fully_connected(hidden, dim, 'rescontruction_' + str(i))
+		output = fully_connected(hidden, self.params.feature_dim, 'reconstruction_o', activation='linear')
+		feature = tf.nn.embedding_lookup(self.feature, self.indices)
+		reconstruction_loss = tf.reduce_sum(tf.sqrt(tf.reduce_sum(tf.squared_difference(output, feature), axis=1)), axis=0)
+
+		logits = fully_connected(dropout(embedding, self.params.keep_prob, self.training), self.params.num_type, 'Classification', activation='linear')
 		self.prediction = tf.argmax(logits, axis=1)
-		loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
+		classification_loss = tf.reduce_mean(tf.nn.sigmoid_cross_entropy_with_logits(
 			labels=tf.one_hot(self.labels, self.params.num_type), logits=logits), axis=0)
 		optimizer = tf.train.AdamOptimizer(self.params.learning_rate)
-		self.classification_step = optimizer.minimize(loss)
 
-		del embedding, logits, loss, optimizer
+		self.classification_step = optimizer.minimize(self.params.c_classification * classification_loss +
+		                                              self.params.c_reconstruction * reconstruction_loss)
+
+		del embedding, hidden, feature, reconstruction_loss, logits, classification_loss, optimizer
 		gc.collect()
+
 
 	def build_PPO(self):
 		state_embedding = tf.reshape(tf.nn.embedding_lookup(self.embedding, self.state), [-1, 2 * self.params.embed_dim])
@@ -67,6 +80,7 @@ class AutoPath(object):
 
 		del state_embedding, hidden, value, policy, sigma
 		gc.collect()
+
 
 	def build_train(self, action, value, value_next, policy_mean, sigma):
 		advantage = self.reward + tf.stop_gradient(value_next) - tf.stop_gradient(value)
@@ -87,6 +101,7 @@ class AutoPath(object):
 		del advantage, log_pi, actor_loss, critic_loss, loss, optimizer
 		gc.collect()
 
+
 	def build_plan(self, policy_mean, sigma):
 		policy = tf.distributions.Normal(policy_mean, sigma)
 		action_embed = policy.sample()
@@ -96,6 +111,7 @@ class AutoPath(object):
 
 		del policy, action_embed, l2_diff
 		gc.collect()
+
 
 	def value_policy(self, state):
 		hidden = state
@@ -108,6 +124,7 @@ class AutoPath(object):
 
 	def policy(self, hidden):
 		return fully_connected(hidden, self.params.embed_dim, 'policy_o', activation='tanh')
+
 
 	# the number of trajectories sampled is equal to batch size
 	def collect_trajectory(self, sess, start_state):
@@ -127,6 +144,7 @@ class AutoPath(object):
 		actions = np.transpose(np.array(actions)).tolist()
 		nexts = np.transpose(np.array(nexts), axes=(1, 0, 2)).tolist()
 		return states, actions, nexts
+
 
 	def PPO_epoch(self, sess):
 		start_state = self.environment.initial_state()
@@ -150,6 +168,7 @@ class AutoPath(object):
 				                                 self.future_reward: future_rewards[batch_indices]})
 				self.summary_writer.add_summary(summary, global_step=sess.run(self.global_step))
 
+
 	def sample_classification(self):
 		indices, labels = [], []
 		types = self.environment.type_to_id.keys()
@@ -162,6 +181,7 @@ class AutoPath(object):
 		for _ in tqdm(range(self.params.classification_step), ncols=100):
 			indices, labels = self.sample_classification()
 			sess.run(self.classification_step, feed_dict={self.indices: indices, self.labels: labels, self.training: True})
+
 
 	# do not initialize variables here
 	def train(self, sess):
@@ -185,6 +205,7 @@ class AutoPath(object):
 			if label == prediction:
 				correct += 1
 		return float(correct) / len(indices)
+
 
 	def plan(self, sess):
 		start_state = self.environment.initial_test()
@@ -218,6 +239,5 @@ class AutoPath(object):
 				for a in action:
 					frequency[a] -= 1
 				rank_lists[self.environment.id_to_name[state]] = {self.environment.id_to_name[node_id]: count for node_id, count in enumerate(frequency) if self.environment.node_to_type[node_id] == state_type}
-
 
 

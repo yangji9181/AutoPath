@@ -2,3 +2,5 @@ baselines/
 preprocessing/
 *.DS_Store
 *config.py
+!/train/config.py
+/data/imdb/pretrained_emb.txt

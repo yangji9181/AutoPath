@@ -10,6 +10,7 @@ class Environment(object):
 		self.params = params
 		self.load_node()
 		self.load_graph()
+		self.feature = self.load_feature()
 		self.train_data = self.load_train(self.params.train_files)
 		self.test_data = self.load_test(self.params.test_file)
 
@@ -34,6 +35,15 @@ class Environment(object):
 					col.append(self.name_to_id[line[1]])
 					data.append(1.0)
 		self.graph = csr_matrix((data, (row, col)), shape=(self.params.num_node, self.params.num_node))
+
+
+	def load_feature(self):
+		feature, dim = utils.load_feature(self.params.embedding_file)
+		self.params.feature_dim = dim
+		embedding = np.empty([self.params.num_node, dim])
+		for name, vector in feature.items():
+			embedding[self.name_to_id[name]] = vector
+		return embedding
 
 
 	def load_train(self, paths):
