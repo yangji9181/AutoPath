@@ -113,7 +113,7 @@ class EmbeddingModel(Model):
 
     def get_train_feature_vecs(self, vec_func='hadamard'):
         train_feature_vecs_list = []
-        for filename in tqdm(['train_pos_node_pairs.txt', 'train_pos_node_pairs.txt'],
+        for filename in tqdm(['train_pos_node_pairs.txt', 'train_neg_node_pairs.txt'],
                              desc='Getting training feature vectors (1st loop)'):
             train_feature_vecs = np.empty((0, self.embedding_size))
             with open(osp.join(self.node_pairs_dir, filename), newline='') as np_file:
