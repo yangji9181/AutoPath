@@ -10,7 +10,8 @@ class Environment(object):
 		self.params = params
 		self.load_node()
 		self.load_graph()
-		self.feature = self.load_feature()
+		if self.params.use_feature:
+			self.feature = self.load_feature()
 		self.train_data = self.load_train(self.params.train_files)
 		self.test_data = self.load_test(self.params.test_file)
 

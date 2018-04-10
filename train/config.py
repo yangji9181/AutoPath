@@ -13,6 +13,7 @@ def parse_args():
 	parser.add_argument('--feature_dim', type=int, default=-1, help=None)
 	parser.add_argument('--hidden_dim', type=list, default=[64], help=None)
 	parser.add_argument('--reconstruct_hidden_dim', type=list, default=[64], help=None)
+	parser.add_argument('--use_feature', type=bool, default=True, help=None)
 	parser.add_argument('--learning_rate', type=float, default=1e-3, help=None)
 	parser.add_argument('--keep_prob', type=float, default=0.5, help='Used for dropout')
 	parser.add_argument('--clip_epsilon', type=float, default=1e-1, help=None)

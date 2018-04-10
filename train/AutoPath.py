@@ -21,7 +21,8 @@ class AutoPath(object):
 		self.training = tf.placeholder(tf.bool)
 		# last index is None embedding
 		self.embedding = embedding('Embedding', [self.params.num_node, self.params.embed_dim])
-		self.feature = tf.Variable(self.environment.feature, dtype=tf.float32, trainable=False)
+		if self.params.use_feature:
+			self.feature = tf.Variable(self.environment.feature, dtype=tf.float32, trainable=False)
 		self.indices = tf.placeholder(tf.int32, [None])
 		self.labels = tf.placeholder(tf.int32, [None])
 		self.neighbors = tf.placeholder(tf.int32, [None, None])
@@ -43,12 +44,15 @@ class AutoPath(object):
 	def build_classification_reconstruction(self):
 		embedding = tf.nn.embedding_lookup(self.embedding, self.indices)
 
-		hidden = embedding
-		for i, dim in enumerate(self.params.reconstruct_hidden_dim):
-			hidden = fully_connected(hidden, dim, 'rescontruction_' + str(i))
-		output = fully_connected(hidden, self.params.feature_dim, 'reconstruction_o', activation='linear')
-		feature = tf.nn.embedding_lookup(self.feature, self.indices)
-		reconstruction_loss = tf.reduce_sum(tf.sqrt(tf.reduce_sum(tf.squared_difference(output, feature), axis=1)), axis=0)
+		if self.params.use_feature:
+			hidden = embedding
+			for i, dim in enumerate(self.params.reconstruct_hidden_dim):
+				hidden = fully_connected(hidden, dim, 'rescontruction_' + str(i))
+			output = fully_connected(hidden, self.params.feature_dim, 'reconstruction_o', activation='linear')
+			feature = tf.nn.embedding_lookup(self.feature, self.indices)
+			reconstruction_loss = tf.reduce_sum(tf.sqrt(tf.reduce_sum(tf.squared_difference(output, feature), axis=1)), axis=0)
+		else:
+			reconstruction_loss = tf.constant(0, dtype=tf.float32)
 
 		logits = fully_connected(dropout(embedding, self.params.keep_prob, self.training), self.params.num_type, 'Classification', activation='linear')
 		self.prediction = tf.argmax(logits, axis=1)
@@ -59,7 +63,7 @@ class AutoPath(object):
 		self.classification_step = optimizer.minimize(self.params.c_classification * classification_loss +
 		                                              self.params.c_reconstruction * reconstruction_loss)
 
-		del embedding, hidden, feature, reconstruction_loss, logits, classification_loss, optimizer
+		del embedding, reconstruction_loss, logits, classification_loss, optimizer
 		gc.collect()
 
 
