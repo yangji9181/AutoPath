@@ -1,25 +1,6 @@
 
 # coding: utf-8
 
-# In[1]:
-
-
-# get_ipython().run_line_magic('matplotlib', 'inline')
-
-
-# In[ ]:
-
-
-
-# coding: utf-8
-
-# In[ ]:
-
-
-
-# coding: utf-8
-
-# In[27]:
 
 
 import csv
@@ -44,24 +25,28 @@ class Model(object):
         self.node_pairs_dir = data_dir
 
     def get_test_node_pairs(self):
-        with open(osp.join(self.node_pairs_dir, 'test_node_pairs.p'), mode='rb') as tnp_file:
-            self.test_node_pairs_list, self.y_tests = pickle.load(tnp_file)
+        # with open(osp.join(self.node_pairs_dir, 'test_node_pairs.p'), mode='rb') as tnp_file:
+        #     self.test_node_pairs_list, self.y_tests = pickle.load(tnp_file)
 
-        # with open(osp.join(self.node_pairs_dir, 'test_pos_dict.p'), mode='rb') as tpd_file:
-        #     test_pos_dict = pickle.load(tpd_file)
-        # with open(osp.join(self.node_pairs_dir, 'all_businesses.p'), mode='rb') as ab_file:
-        #     all_businesses = pickle.load(ab_file)
-        # self.test_node_pairs_list = []
-        # self.y_tests = []
-        # for business1 in tqdm(test_pos_dict, desc='Getting test node pairs (1st loop)'):
-        #     node_pairs = []
-        #     y_test = np.empty(0)
-        #     for business2 in tqdm(all_businesses, desc='Getting test node pairs (2nd loop)'):
-        #         # feature_vec = self.get_feature_vec((business1, business2), vec_func)
-        #         node_pairs.append((business1, business2))
-        #         y_test = np.append(y_test, 1 if business2 in test_pos_dict[business1] else 0)
-        #     self.test_node_pairs_list.append(node_pairs)
-        #     self.y_tests.append(y_test)
+        with open(osp.join(self.node_pairs_dir, 'y_tests.p'), mode='rb') as yt_file:
+            self.y_tests = pickle.load(yt_file)
+
+        test_nodes = []
+        all_nodes = []
+        with open(osp.join(self.node_pairs_dir, 'test_nodes.txt')) as tn_file:
+            for line in tn_file:
+                test_nodes.append(line.strip())
+        with open(osp.join(self.node_pairs_dir, 'all_nodes.txt')) as an_file:
+            for line in an_file:
+                all_nodes.append(line.strip())
+
+        self.test_node_pairs_list = []
+        for node1 in tqdm(test_nodes, desc='Getting test node pairs (1st loop)'):
+            node_pairs = []
+            for node2 in tqdm(all_nodes, desc='Getting test node pairs (2nd loop)'):
+                # feature_vec = self.get_feature_vec((business1, business2), vec_func)
+                node_pairs.append((node1, node2))
+            self.test_node_pairs_list.append(node_pairs)
 
         # return X_tests, y_tests
 
