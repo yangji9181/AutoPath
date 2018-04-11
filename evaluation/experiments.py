@@ -329,7 +329,7 @@ if __name__ == '__main__':
     # In[4]:
 
     # train_size = 0.7
-    baselines = ['metapath2vec']
+    baselines = ['pathsim']
     #baselines = ['pathsim', 'esim', 'autopath']
     dataset = 'imdb'
     baseline_performance = dict()
