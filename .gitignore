@@ -2,12 +2,7 @@ baselines/
 preprocessing/
 *.DS_Store
 *config.py
-<<<<<<< Updated upstream
-!/train/config.py
 /data/imdb/pretrained_emb.txt
-!/data/imdb/pretrained_emb.txt
-=======
 train/model/
 *run.sh
->>>>>>> Stashed changes
 /data/imdb/reward.png
