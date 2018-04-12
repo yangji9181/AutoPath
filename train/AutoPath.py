@@ -211,11 +211,10 @@ class AutoPath(object):
 		return float(correct) / len(indices)
 
 
-	def plan(self, sess):
-		start_state = self.environment.initial_test()
+	def plan(self, sess, start_state):
 		trials = []
 		for _ in tqdm(range(self.params.num_trial), ncols=100):
-			_, actions, _ = self.collect_trajectory(sess, start_state)
+			states, actions, nexts = self.collect_trajectory(sess, start_state)
 			trials.append(np.array(actions))
 		trials = np.concatenate(trials, axis=1)
 		start_state = start_state[:, 0]
@@ -241,7 +240,5 @@ class AutoPath(object):
 				state_type = self.environment.node_to_type[state]
 				frequency = np.zeros(self.params.num_node, dtype=np.int32)
 				for a in action:
-					frequency[a] -= 1
+					frequency[a] += 1
 				rank_lists[self.environment.id_to_name[state]] = {self.environment.id_to_name[node_id]: count for node_id, count in enumerate(frequency) if self.environment.node_to_type[node_id] == state_type}
-
-

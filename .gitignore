@@ -10,3 +10,4 @@ preprocessing/
 train/model/
 *run.sh
 >>>>>>> Stashed changes
+/data/imdb/reward.png

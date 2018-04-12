@@ -58,3 +58,28 @@ def plot(data, plot_file):
 	plt.plot(range(len(data)), data)
 	plt.savefig(plot_file)
 	plt.close()
+
+
+def load_movie_genre(movie_path, genre_paths, genre_name_path):
+	genres = {}
+	with open(genre_name_path) as f:
+		for line in f:
+			line = line.rstrip().split()
+			genres[line[0]] = line[1]
+
+	id_to_movie, movie_to_id = {}, {}
+	with open(movie_path) as f:
+		for line in f:
+			line = line.rstrip().split('\t')
+			movie = '_'.join(line[1].split()[:-1])
+			id_to_movie['m' + line[0]] = movie
+			movie_to_id[movie] = 'm' + line[0]
+
+	id_to_genre = {}
+	for genre_path in genre_paths:
+		genre = genres[genre_path.split('/')[-1].split('.')[0].split('_')[1]]
+		with open(genre_path) as f:
+			for line in f:
+				id_to_genre[line.rstrip()] = genre
+
+	return id_to_movie, movie_to_id, id_to_genre

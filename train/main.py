@@ -17,4 +17,4 @@ if __name__ == '__main__':
 			agent.train(sess)
 			saver.save(sess, args.model_file)
 			print('Node type accuracy: %f' % agent.accuracy(sess))
-			#rank_lists = agent.plan(sess)
+			rank_lists = agent.plan(sess, environment.initial_test())

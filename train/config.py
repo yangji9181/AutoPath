@@ -41,9 +41,12 @@ def init_dir(args):
 	args.train_files = [args.data_dir + 'node_classes/genre_' + str(i) + '.txt' for i in range(1, 24)]
 	args.test_file = args.data_dir + 'test_nodes.txt'
 	args.embedding_file = args.data_dir + 'pretrained_emb.txt'
-	args.plot_file = args.model_dir + 'reward.png'
+	args.plot_file = args.data_dir + 'reward.png'
 	args.model_file = args.model_dir + 'model.ckpt'
 	args.rank_list_file = '../evaluation/imdb/' + 'rank_list.pkl'
+	args.movie_file = args.data_dir + 'movie_list.txt'
+	args.genre_files = args.train_files
+	args.genre_name_file = args.data_dir + 'genre_list.txt'
 
 args = parse_args()
 init_dir(args)
