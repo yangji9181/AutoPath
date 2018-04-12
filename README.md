@@ -13,9 +13,3 @@ The AutoPath pipeline for similarity modeling on heterogeneous networks with aut
 ## Example Output
 
 
-## Contact
-If you have any questions about the code and data, please feel free to contact me.
-```
-Carl Yang, yangji9181@gmail.com
-
-
