@@ -1,8 +1,8 @@
 baselines/
 preprocessing/
 *.DS_Store
-*config.py
 /data/imdb/pretrained_emb.txt
 train/model/
 *run.sh
 /data/imdb/reward.png
+!/train/config.py
