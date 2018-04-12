@@ -19,8 +19,8 @@ def rank(user_choices):
 		sorted_rank = sorted(rank_list.items(), key=operator.itemgetter(1), reverse=True)
 		for related in sorted_rank[: args.top_k]:
 			name = related[0]
-			if name != movie and name in id_to_movie and id_to_genre:
-				print(id_to_movie[related[0]], id_to_genre[related[0]])
+			if name != movie and name in id_to_movie and name in id_to_genre:
+				print(id_to_movie[name], id_to_genre[name])
 		print('----------------')
 
 
