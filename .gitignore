@@ -4,3 +4,4 @@ preprocessing/
 train/model/
 *run.sh
 /data/imdb/reward.png
+/train/log/
