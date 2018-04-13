@@ -2,7 +2,7 @@
 The AutoPath pipeline for similarity modeling on heterogeneous networks with automatic path discovery
 
 ## Publication
-Carl Yang, Mengxiong Liu, Frank He, Jian Peng, Jiawei Han, ``Similarity Modeling on Heterogeneous Networks via Automatic Path Discovery'', submitted to ECML/PKDD 2018, under review.
+Carl Yang, Mengxiong Liu, Frank He, Jian Peng, Jiawei Han, "Similarity Modeling on Heterogeneous Networks via Automatic Path Discovery", submitted to ECML/PKDD 2018, under review.
 
 ## Deployment
 AutoPath is implemented with TensorFlow and Python2. Please make sure you have the newest version of both of them. If not sure, simply run
@@ -17,14 +17,14 @@ Use the following commands to run train the AutoPath model on our default IMDb d
 cd model
 python2 train.py
 ```
-You may also change the parameters as you like in config.py. With our default parameter settings, training the model roughly takes a few minutes on CPU. Note that, you need to remove the tmp folder if you change the neural network structures in order to train a new model.
+You may also change the parameters as you like in config.py. With our default parameter settings, training the model roughly takes a few minutes on CPU. Note that, you need to remove the \tmp folder if you change the neural network structures before training a new model.
 
 ## Demo
 Use the following command to play with the trained AutoPath model.
 ```
 python2 demo.py
 ```
-This demo basically allows you to look for movies with similar genres. Note that exactly finding movies with the exactly the same set of genres is very challenging, because genres can be multiple and ambiguous. Nonetheless, our results show that most movies returned by our model at least share a few genres with the queried movie. To play with the demo, input one or more movies (separated by space) at each time. 
+This demo basically allows you to look for similar movies regarding genres. Note that finding movies with exactly the same set of genres is very challenging, because genres can be multiple and ambiguous. Nonetheless, our results show that most movies returned by our model at least share a few genres with the queried movie. To play with the demo, input one or more movie ids (separated by space) at each time. 
 
 ## Example Input
 ```
@@ -48,3 +48,6 @@ Top 10 related movies for <the_van>, ['Comedy', 'Drama']
 <an_american_in_paris>, ['Romance', 'Musical']
 <sweet_nothing>, ['Drama']
 ```
+
+## Contact
+If you have any questions about the code or data, please feel free to contact me.
