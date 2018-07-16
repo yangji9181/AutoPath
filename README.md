@@ -9,6 +9,7 @@ AutoPath is implemented with TensorFlow and Python2. Please make sure you have t
 ```
 pip2 install --upgrade pip
 pip2 install --upgrade tensorflow
+pip2 install tqdm
 ```
 
 ## Model Training
