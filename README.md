@@ -58,5 +58,3 @@ Top 10 related movies for <the_van>, ['Comedy', 'Drama']
 <sweet_nothing>, ['Drama']
 ```
 
-## Contact
-If you have any questions about the code or data, please feel free to contact me.
