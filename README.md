@@ -1,8 +1,16 @@
-# AutoPath
-The AutoPath pipeline for similarity modeling on heterogeneous networks with automatic path discovery
+## Implementation of *AutoPath*, ECML-PKDD 2018.
 
-## Publication
-Carl Yang, Mengxiong Liu, Frank He, Xikun Zhang, Jian Peng, Jiawei Han, "Similarity Modeling on Heterogeneous Networks via Automatic Path Discovery", ECML/PKDD 2018.
+Please cite the following work if you find the code useful.
+
+```
+@inproceedings{yang2018similarity,
+	Author = {Yang, Carl and Liu, Mengxiong and He, Frank and Zhang, Xikun and Peng, Jian and Han, Jiawei},
+	Booktitle = {ECML-PKDD},
+	Title = {Similarity modeling on heterogeneous networks via automatic path discovery},
+	Year = {2018}
+}
+```
+Contact: Carl Yang (yangji9181@gmail.com)
 
 ## Deployment
 AutoPath is implemented with TensorFlow and Python2. Please make sure you have the newest version of both of them. If not sure, simply run
